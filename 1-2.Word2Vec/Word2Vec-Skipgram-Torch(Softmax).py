@@ -24,7 +24,7 @@ word_dict = {w: i for i, w in enumerate(word_list)}
 # Word2Vec Parameter
 batch_size = 20  # To show 2 dim embedding graph
 embedding_size = 2  # To show 2 dim embedding graph
-voc_size = len(word_list)
+voc_size = len(word_list) # voc_size = 13
 
 def random_batch(data, size):
     random_inputs = []
@@ -32,6 +32,7 @@ def random_batch(data, size):
     random_index = np.random.choice(range(len(data)), size, replace=False)
 
     for i in random_index:
+        # making one-hot vector
         random_inputs.append(np.eye(voc_size)[data[i][0]])  # target
         random_labels.append(data[i][1])  # context word
 
@@ -43,14 +44,22 @@ for i in range(1, len(word_sequence) - 1):
     target = word_dict[word_sequence[i]]
     context = [word_dict[word_sequence[i - 1]], word_dict[word_sequence[i + 1]]]
 
+    # print(target, context)
+    # print('-'*50)
+
     for w in context:
         skip_grams.append([target, w])
+
+# print(word_sequence)
+# from pprint import pprint
+# pprint(word_dict)
 
 # Model
 class Word2Vec(nn.Module):
     def __init__(self):
         super(Word2Vec, self).__init__()
 
+        # each component of W and WT can have val from -1 to 1
         # W and WT is not Traspose relationship
         self.W = nn.Parameter(-2 * torch.rand(voc_size, embedding_size) + 1).type(dtype) # voc_size > embedding_size Weight
         self.WT = nn.Parameter(-2 * torch.rand(embedding_size, voc_size) + 1).type(dtype) # embedding_size > voc_size Weight
@@ -67,12 +76,12 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training
-for epoch in range(5000):
+for epoch in range(50000):
 
     input_batch, target_batch = random_batch(skip_grams, batch_size)
 
-    input_batch = Variable(torch.Tensor(input_batch))
-    target_batch = Variable(torch.LongTensor(target_batch))
+    input_batch = torch.Tensor(input_batch)
+    target_batch = torch.LongTensor(target_batch)
 
     optimizer.zero_grad()
     output = model(input_batch)
@@ -81,6 +90,9 @@ for epoch in range(5000):
     loss = criterion(output, target_batch)
     if (epoch + 1)%1000 == 0:
         print('Epoch:', '%04d' % (epoch + 1), 'cost =', '{:.6f}'.format(loss))
+
+        print(input_batch.size(), output.size(), target_batch.size())
+        print("-"*100)
 
     loss.backward()
     optimizer.step()
